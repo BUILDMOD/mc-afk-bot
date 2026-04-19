@@ -5,31 +5,40 @@ const app = express();
 app.get('/', (req, res) => {
   res.send('<h2>✅ MC AFK Bot Running!</h2>');
 });
-app.listen(3000, () => console.log('🌐 Keep-alive server running!'));
+app.listen(process.env.PORT || 3000, () => {
+  console.log('🌐 Keep-alive server running!');
+});
 
 const config = {
   host: 'mrgrill20.aternos.me',
   port: 23782,
   username: 'AFKBot',
-  version: '1.26.0',
+  version: '1.21.80',
   offline: true
 };
 
 let client;
 let afkTimer;
+let reconnectCount = 0;
 
 function createBot() {
-  console.log('🔄 Connecting to mrgrill20.aternos.me:23782...');
+  reconnectCount++;
+  console.log(`🔄 Connection attempt #${reconnectCount}...`);
+
   try {
     client = new Client(config);
 
     client.on('join', () => {
-      console.log('✅ Bot connected!');
+      console.log('✅ Bot connected! Server staying online!');
       startAntiAFK();
     });
 
+    client.on('spawn', () => {
+      console.log('📍 Bot spawned in world!');
+    });
+
     client.on('disconnect', (packet) => {
-      console.log('❌ Disconnected:', packet?.message || 'Unknown');
+      console.log('❌ Disconnected:', JSON.stringify(packet));
       stopAntiAFK();
       setTimeout(createBot, 10000);
     });
@@ -37,12 +46,18 @@ function createBot() {
     client.on('error', (err) => {
       console.log('⚠️ Error:', err.message);
       stopAntiAFK();
+      setTimeout(createBot, 15000);
+    });
+
+    client.on('close', () => {
+      console.log('🔌 Connection closed. Reconnecting...');
+      stopAntiAFK();
       setTimeout(createBot, 10000);
     });
 
   } catch (err) {
-    console.log('❌ Failed:', err.message);
-    setTimeout(createBot, 10000);
+    console.log('❌ Failed to create bot:', err.message);
+    setTimeout(createBot, 15000);
   }
 }
 
@@ -67,7 +82,10 @@ function startAntiAFK() {
 }
 
 function stopAntiAFK() {
-  if (afkTimer) { clearInterval(afkTimer); afkTimer = null; }
+  if (afkTimer) {
+    clearInterval(afkTimer);
+    afkTimer = null;
+  }
 }
 
 createBot();
