@@ -13,7 +13,7 @@ const config = {
   host: 'mrgrill20.aternos.me',
   port: 23782,
   username: 'AFKBot',
-  version: '1.21.80',
+  version: '1.26.14',
   offline: true
 };
 
